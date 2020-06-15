@@ -1,8 +1,7 @@
 // FIXME: Make me pass! Diff budget: 30 lines.
 
-// I AM NOT DONE
 
-#[derive(Default)]
+#[derive(Debug,Default)]
 struct Builder {
     string: Option<String>,
     number: Option<usize>,
@@ -10,12 +9,31 @@ struct Builder {
 
 impl Builder {
     // fn string(...
-
+    fn string<S: Into<String>>(&mut self, s:S) -> &mut Self {
+        self.string=Some(s.into());
+        self
+    }
     // fn number(...
+    fn number(&mut self, x:usize) -> &mut Self {
+        self.number= Some(x);
+        self
+    }
 }
 
 impl ToString for Builder {
     // Implement the trait
+    fn to_string(&self) ->String {
+        if self.string.is_some() && self.number.is_some() {
+            format!("{} {}", self.string.as_ref().unwrap().to_string(), self.number.unwrap())
+            //concat!(self.string.unwrap(), " ", self.number.unwrap())
+        } else if self.string.is_some() {
+            self.string.as_ref().unwrap().to_string()
+        } else if self.number.is_some() {
+            self.number.unwrap().to_string()
+        } else {
+            "".to_string()
+        }
+    }
 }
 
 // Do not modify this function.
