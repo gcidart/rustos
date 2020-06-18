@@ -4,7 +4,8 @@ KERN := blinky
 KERN_DEBUG := target/aarch64-unknown-none/debug/${KERN}
 KERN_RELEASE := target/aarch64-unknown-none/release/${KERN}
 
-OBJCPY := cargo objcopy -- --strip-all -O binary
+OBJCPY := /usr/lib/llvm-8/bin/llvm-objcopy -strip-all -O binary
+# OBJCPY := cargo objcopy -- --strip-all -O binary
 
 .PHONY: all debug release qemu objdump nm check clean install test
 
