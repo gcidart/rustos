@@ -547,6 +547,7 @@ returning an `Ok` result if those checks determine that everything is... okay :)
 
 # STANDARD LIBRARY TYPES
 
+
 [[exercises]]
 name = "iterators2"
 path = "exercises/iterators/iterators2.rs"
@@ -643,6 +644,12 @@ mode = "compile"
 hint = "No hints this time ;)"
 
 [[exercises]]
+name = "const"
+path = "exercises/cs140e/const.rs"
+mode = "compile"
+hint = "No hints this time ;)"
+
+[[exercises]]
 name = "borrow-1"
 path = "exercises/cs140e/borrow-1.rs"
 mode = "compile"
@@ -657,6 +664,12 @@ hint = "No hints this time ;)"
 [[exercises]]
 name = "derive"
 path = "exercises/cs140e/derive.rs"
+mode = "compile"
+hint = "No hints this time ;)"
+
+[[exercises]]
+name = "feature-1"
+path = "exercises/cs140e/feature-1.rs"
 mode = "compile"
 hint = "No hints this time ;)"
 
