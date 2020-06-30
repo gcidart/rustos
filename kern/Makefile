@@ -2,9 +2,10 @@ ROOT := $(shell git rev-parse --show-toplevel)
 
 KERN := kernel
 TARGET := target/aarch64-unknown-none/release/${KERN}
-#OBJCPY := cargo objcopy -- --strip-all -O binary
+SDCARD ?= $(ROOT)/ext/fat32-imgs/mock1.fat32.img
 OBJCPY := /usr/lib/llvm-8/bin/llvm-objcopy -strip-all -O binary
 TTY_PATH := /dev/ttyUSB0
+QEMU_ARGS ?=
 
 .PHONY: all build qemu transmit objdump nm check clean install test
 
@@ -23,11 +24,26 @@ check:
 	@cargo xcheck
 
 qemu: build
+<<<<<<< HEAD
 	./qemu.sh build/$(KERN).bin
 
 transmit: 
 	@echo "+ Transmitting build/$(KERN).bin to $(TTY_PATH)"
 	ttywrite -i build/$(KERN).bin $(TTY_PATH)
+=======
+	./qemu.sh build/$(KERN).bin -drive file=$(SDCARD),format=raw,if=sd $(QEMU_ARGS)
+
+qemu-gdb: build
+	./qemu.sh build/$(KERN).bin -drive file=$(SDCARD),format=raw,if=sd -s -S
+
+qemu-asm: build
+	./qemu.sh build/$(KERN).bin -drive file=$(SDCARD),format=raw,if=sd -d in_asm
+
+transmit: build
+	@echo "+ Transmitting build/$(KERN).bin to $(TTY_PATH)"
+	ttywrite -i build/$(KERN).bin $(TTY_PATH)
+	screen $(TTY_PATH) 115200
+>>>>>>> skeleton/lab3
 
 objdump: build
 	cargo objdump -- -disassemble -no-show-raw-insn -print-imm-hex build/$(KERN).elf
@@ -39,9 +55,17 @@ clean:
 	cargo clean
 	rm -rf build
 
+<<<<<<< HEAD
 install: 
+=======
+install: build
+>>>>>>> skeleton/lab3
 	@echo "+ Installing build/$(KERN).elf [install-kernel.py]"
 	@$(ROOT)/bin/install-kernel.py build/$(KERN).elf
 
 test:
+<<<<<<< HEAD
 	cargo test --target=$(shell $(ROOT)/bin/get-host-target.sh)
+=======
+	cargo test --target=$(shell $(ROOT)/bin/get-host-target.sh)
+>>>>>>> skeleton/lab3

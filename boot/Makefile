@@ -32,7 +32,11 @@ clean:
 	cargo clean
 	rm -rf build
 
+<<<<<<< HEAD
 install: 
+=======
+install: build
+>>>>>>> skeleton/lab3
 	@echo "+ Installing build/$(KERN).elf [install-kernel.py]"
 	@$(ROOT)/bin/install-kernel.py build/$(KERN).elf
 

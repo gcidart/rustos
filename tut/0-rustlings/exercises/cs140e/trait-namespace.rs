@@ -9,8 +9,7 @@ mod a {
 
     pub struct MyType;
 
-    impl MyTrait for MyType {
-    }
+    impl MyTrait for MyType {  }
 }
 
 // Do not modify this function.

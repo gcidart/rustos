@@ -9,7 +9,11 @@ mod init;
 
 use xmodem::Xmodem;
 use core::time::Duration;
+<<<<<<< HEAD
 use pi::uart;
+=======
+use pi;
+>>>>>>> skeleton/lab3
 
 /// Start address of the binary to load and of the bootloader.
 const BINARY_START_ADDR: usize = 0x80000;

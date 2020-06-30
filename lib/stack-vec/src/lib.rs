@@ -111,7 +111,6 @@ impl<'a, T: 'a> StackVec<'a, T> {
             self.len = self.len+1;
             Ok(())
         }
-                
     }
 }
 
