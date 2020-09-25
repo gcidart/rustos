@@ -5,12 +5,14 @@ use stack_vec::StackVec;
 
 use pi::atags::Atags;
 
-use fat32::traits::FileSystem;
-use fat32::traits::{Dir, Entry};
+//use std; //TODO
+
+//use fat32::traits::FileSystem;
+//use fat32::traits::{Dir, Entry};
 
 use crate::console::{kprint, kprintln, CONSOLE};
 use crate::ALLOCATOR;
-use crate::FILESYSTEM;
+//use crate::FILESYSTEM;
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -91,6 +93,17 @@ pub fn shell(prefix: &str) -> ! {
                 if cmd.path()=="echo" {
                     for i in 1..cmd.args.len() {
                         kprint!("{} ",cmd.args[i]);
+                    }
+                } else if cmd.path()=="panic" {
+                    //std::String::from("Test Panic");
+                    panic!();
+                } else if cmd.path()=="atag" {
+                    let mut atag = Atags::get(); 
+                    loop {
+                        match atag.next()  {
+                            Some(a) => kprintln!("{:#?}", a),
+                            None => break,
+                        }
                     }
                 } else {
                     kprint!("unknown command: {}", cmd.path());

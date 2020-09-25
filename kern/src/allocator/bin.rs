@@ -14,16 +14,38 @@ use crate::allocator::LocalAlloc;
 ///   
 ///   map_to_bin(size) -> k
 ///   
-
+const NUM_BINS: usize = 11; /*Corresponds to 8192 bytes*/
+/// Returns the bin number for the layout provided  
+fn bin_index(layout: Layout) -> usize {
+    /// Size of the memory to be allocated is maximum of requested size and 
+    /// requested alignment
+    let mut size_req = layout.size();
+    if layout.align() > size_req {
+        size_req = layout.align();
+    }
+    let mut idx = 0;
+    let mut bin_size = 8;
+    while idx < NUM_BINS-1 && size_req > bin_size {
+        idx+=1;
+        bin_size*=2;
+    }
+    return idx;
+}
 pub struct Allocator {
-    // FIXME: Add the necessary fields.
+    current: usize,
+    end: usize,
+    bins: [LinkedList; NUM_BINS],
 }
 
 impl Allocator {
     /// Creates a new bin allocator that will allocate memory from the region
     /// starting at address `start` and ending at address `end`.
     pub fn new(start: usize, end: usize) -> Allocator {
-        unimplemented!("bin allocator")
+        Allocator {
+            bins: [LinkedList::new(); NUM_BINS],
+            current: start,
+            end: end,
+        }
     }
 }
 
@@ -50,7 +72,37 @@ impl LocalAlloc for Allocator {
     /// or `layout` does not meet this allocator's
     /// size or alignment constraints.
     unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
-        unimplemented!("bin allocator")
+        if layout.size() <=0 || layout.align().count_ones() > 1 {
+            return core::ptr::null_mut();
+        }
+        let bidx = bin_index(layout);
+        match self.bins[bidx].pop() {
+            Some(ptr) => ptr as *mut u8,
+            None => {
+                let mut bidxc = bidx;
+                let mut size_req = 8;
+                while bidxc > 0 {
+                    size_req*= 2;
+                    bidxc-= 1;
+                }
+                let orig = self.current;
+                self.current = align_up(self.current, size_req);
+                let start = self.current;
+                self.current = self.current.saturating_add(size_req);
+                if self.current > self.end {
+                    self.current = orig;
+                    return core::ptr::null_mut();
+                } else {
+                    /* Reduce Fragmentation because of alignment*/
+                    if(start - orig > self.end - self.current)
+                    {
+                        self.end = self.current-1;
+                        self.current = orig;
+                    }
+                    return start as *mut u8;
+                }
+            }
+        }
     }
 
     /// Deallocates the memory referenced by `ptr`.
@@ -67,8 +119,28 @@ impl LocalAlloc for Allocator {
     /// Parameters not meeting these conditions may result in undefined
     /// behavior.
     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: Layout) {
-        unimplemented!("bin allocator")
+        let bidx = bin_index(layout);
+        self.bins[bidx].push(ptr as *mut usize);
     }
 }
 
-// FIXME: Implement `Debug` for `Allocator`.
+impl fmt::Debug for Allocator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Allocator")
+            .field("current", &self.current)
+            .field("end", &self.end)
+            .field("bins[0]", &self.bins[0])
+            .field("bins[1]", &self.bins[1])
+            .field("bins[2]", &self.bins[2])
+            .field("bins[3]", &self.bins[3])
+            .field("bins[4]", &self.bins[4])
+            .field("bins[5]", &self.bins[5])
+            .field("bins[6]", &self.bins[6])
+            .field("bins[7]", &self.bins[7])
+            .field("bins[8]", &self.bins[8])
+            .field("bins[9]", &self.bins[9])
+            .field("bins[10]", &self.bins[10])
+            .finish()
+    }
+}
+

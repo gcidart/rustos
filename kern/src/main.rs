@@ -15,23 +15,25 @@ extern crate alloc;
 
 pub mod allocator;
 pub mod console;
-pub mod fs;
+//pub mod fs;
 pub mod mutex;
 pub mod shell;
 
 use console::kprintln;
 
 use allocator::Allocator;
-use fs::FileSystem;
+use pi::timer;
+//use fs::FileSystem;
 
 #[cfg_attr(not(test), global_allocator)]
 pub static ALLOCATOR: Allocator = Allocator::uninitialized();
-pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
+//pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
 
 fn kmain() -> ! {
+    timer::spin_sleep(core::time::Duration::from_millis(30000));
     unsafe {
-        ALLOCATOR.initialize();
-        FILESYSTEM.initialize();
+       ALLOCATOR.initialize();
+       //FILESYSTEM.initialize();
     }
 
     kprintln!("Welcome to cs3210!");

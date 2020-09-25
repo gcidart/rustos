@@ -77,14 +77,32 @@ extern "C" {
 pub fn memory_map() -> Option<(usize, usize)> {
     let page_size = 1 << 12;
     let binary_end = unsafe { (&__text_end as *const u8) as usize };
-
-    unimplemented!("memory map")
+    let start = util::align_up(binary_end+4, page_size);
+    let mut end = 0; 
+    let mut atag = Atags::get();
+    loop {
+        match atag.next() {
+            Some(a) => {
+                match Atag::mem(a) {
+                    Some(m) => {
+                        end = m.start + m.size;
+                        break;
+                    },
+                    None => continue
+                }
+            },
+            None => break
+        }
+    }
+    let end = util::align_down(end as usize, page_size);
+    kprintln!("Memory Map Start:{} End:{}", start, end);
+    Some((start, end))
 }
 
 impl fmt::Debug for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0.lock().as_mut() {
-            Some(ref alloc) => write!(f, "{:?}", alloc)?,
+            Some(ref alloc) => write!(f, "allocator")?,
             None => write!(f, "Not yet initialized")?,
         }
         Ok(())

@@ -7,4 +7,8 @@ impl From<u32> for Cluster {
     }
 }
 
-// TODO: Implement any useful helper methods on `Cluster`.
+impl Cluster {
+    pub fn cluster_num(&self) -> u64 {
+        self.0 as u64
+    }
+}

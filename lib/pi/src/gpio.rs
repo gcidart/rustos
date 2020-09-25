@@ -62,18 +62,9 @@ states! {
 pub struct Gpio<State> {
     pin: u8,
     registers: &'static mut Registers,
-<<<<<<< HEAD
-    _state: PhantomData<State>
-}
-
-/// The base address of the `GPIO` registers.
-const GPIO_BASE: usize = IO_BASE + 0x200000;
-
-=======
     _state: PhantomData<State>,
 }
 
->>>>>>> skeleton/lab3
 impl<T> Gpio<T> {
     /// Transitions `self` to state `S`, consuming `self` and returning a new
     /// `Gpio` instance in state `S`. This method should _never_ be exposed to
@@ -83,11 +74,7 @@ impl<T> Gpio<T> {
         Gpio {
             pin: self.pin,
             registers: self.registers,
-<<<<<<< HEAD
             _state: PhantomData
-=======
-            _state: PhantomData,
->>>>>>> skeleton/lab3
         }
     }
 }
@@ -106,18 +93,13 @@ impl Gpio<Uninitialized> {
         Gpio {
             registers: unsafe { &mut *(GPIO_BASE as *mut Registers) },
             pin: pin,
-<<<<<<< HEAD
             _state: PhantomData
-=======
-            _state: PhantomData,
->>>>>>> skeleton/lab3
         }
     }
 
     /// Enables the alternative function `function` for `self`. Consumes self
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
-<<<<<<< HEAD
         let regindex:usize = (self.pin/10).into();
         let mut setting = self.registers.FSEL[regindex].read();
         let mask = 7u32 << ((self.pin%10)*3);
@@ -133,9 +115,6 @@ impl Gpio<Uninitialized> {
         }
         
 
-=======
-        unimplemented!()
->>>>>>> skeleton/lab3
     }
 
     /// Sets this pin to be an _output_ pin. Consumes self and returns a `Gpio`
@@ -154,24 +133,16 @@ impl Gpio<Uninitialized> {
 impl Gpio<Output> {
     /// Sets (turns on) the pin.
     pub fn set(&mut self) {
-<<<<<<< HEAD
         let regindex:usize = (self.pin/32).into();
         let setting = 1u32<<(self.pin%32);
         self.registers.SET[regindex].write(setting);
-=======
-        unimplemented!()
->>>>>>> skeleton/lab3
     }
 
     /// Clears (turns off) the pin.
     pub fn clear(&mut self) {
-<<<<<<< HEAD
         let regindex:usize = (self.pin/32).into();
         let setting = 1u32<<(self.pin%32);
         self.registers.CLR[regindex].write(setting);
-=======
-        unimplemented!()
->>>>>>> skeleton/lab3
     }
 }
 
@@ -179,7 +150,6 @@ impl Gpio<Input> {
     /// Reads the pin's value. Returns `true` if the level is high and `false`
     /// if the level is low.
     pub fn level(&mut self) -> bool {
-<<<<<<< HEAD
         let regindex:usize = (self.pin/32).into();
         let mut setting = self.registers.LEV[regindex].read();
         setting &= 1u32<<(self.pin%32);
@@ -188,8 +158,5 @@ impl Gpio<Input> {
         } else {
             true
         }
-=======
-        unimplemented!()
->>>>>>> skeleton/lab3
     }
 }
