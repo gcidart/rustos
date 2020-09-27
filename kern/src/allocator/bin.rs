@@ -17,8 +17,8 @@ use crate::allocator::LocalAlloc;
 const NUM_BINS: usize = 11; /*Corresponds to 8192 bytes*/
 /// Returns the bin number for the layout provided  
 fn bin_index(layout: Layout) -> usize {
-    /// Size of the memory to be allocated is maximum of requested size and 
-    /// requested alignment
+    // Size of the memory to be allocated is maximum of requested size and 
+    // requested alignment
     let mut size_req = layout.size();
     if layout.align() > size_req {
         size_req = layout.align();
@@ -94,7 +94,7 @@ impl LocalAlloc for Allocator {
                     return core::ptr::null_mut();
                 } else {
                     /* Reduce Fragmentation because of alignment*/
-                    if(start - orig > self.end - self.current)
+                    if start - orig > self.end - self.current
                     {
                         self.end = self.current-1;
                         self.current = orig;

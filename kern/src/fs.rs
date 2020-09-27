@@ -11,7 +11,7 @@ use fat32::vfat::{Dir, Entry, File, VFat, VFatHandle};
 
 use self::sd::Sd;
 use crate::mutex::Mutex;
-
+use crate::console::kprintln;
 #[derive(Clone)]
 pub struct PiVFatHandle(Rc<Mutex<VFat<Self>>>);
 
@@ -57,9 +57,25 @@ impl FileSystem {
     ///
     /// Panics if the underlying disk or file sytem failed to initialize.
     pub unsafe fn initialize(&self) {
-        unimplemented!("FileSystem::initialize()")
+        match Sd::new() {
+            Ok(sd_device) =>  *self.0.lock() = Some(VFat::from(sd_device).unwrap()),
+            Err(e) => kprintln!("Error in FileSystem init  {:?}", e)
+        };
+
     }
 }
 
-// FIXME: Implement `fat32::traits::FileSystem` for `&FileSystem`
-impl fat32::traits::FileSystem for &FileSystem {}
+impl fat32::traits::FileSystem for &FileSystem {
+     type File = File<PiVFatHandle>;
+     type Dir =  Dir<PiVFatHandle>;
+     type Entry = Entry<PiVFatHandle>;
+
+     fn open<P: AsRef<Path>>(self, path: P) -> io::Result<Self::Entry> {
+         if let Some(handle) = &*self.0.lock() {
+             handle.clone().open(path)
+         } else {
+             ioerr!(Other, "Failed to get handle")
+         }
+     }
+
+}

@@ -3,7 +3,7 @@ use shim::io;
 use shim::ioerr;
 
 use fat32::traits::BlockDevice;
-
+use pi::timer;
 extern "C" {
     /// A global representing the last SD controller error that occured.
     static sd_err: i64;
@@ -31,6 +31,12 @@ extern "C" {
 
 // FIXME: Define a `#[no_mangle]` `wait_micros` function for use by `libsd`.
 // The `wait_micros` C signature is: `void wait_micros(unsigned int);`
+#[no_mangle]
+pub fn wait_micros(us: u32) {
+    let wait_time = Duration::from_millis((us*10) as u64);
+    timer::spin_sleep(wait_time);
+}
+
 
 /// A handle to an SD card controller.
 #[derive(Debug)]
@@ -43,7 +49,12 @@ impl Sd {
     /// with atomic memory access, but we can't use it yet since we haven't
     /// written the memory management unit (MMU).
     pub unsafe fn new() -> Result<Sd, io::Error> {
-        unimplemented!("Sd::new()")
+        match sd_init() {
+            0 => Ok(Sd{}),
+            -1 => ioerr!(TimedOut, "Timeout"),
+            -2 => ioerr!(Other, "error sending command to SD controller"),
+            _ => ioerr!(Other, "undefined error"),
+        }
     }
 }
 
@@ -61,7 +72,20 @@ impl BlockDevice for Sd {
     ///
     /// An error of kind `Other` is returned for all other errors.
     fn read_sector(&mut self, n: u64, buf: &mut [u8]) -> io::Result<usize> {
-        unimplemented!("Sd::read_sector()")
+        if buf.len() < 512 || n > 0x7ffffffff {
+            ioerr!(InvalidInput, "invalid input")
+        } else {
+            unsafe {
+                match sd_readsector(n as i32, buf.as_mut_ptr()) {
+                    0 => match sd_err {
+                        -1 => ioerr!(TimedOut, "Timeout"),
+                        -2 => ioerr!(Other, "error sending command to SD controller"),
+                        _ => ioerr!(Other, "other error"),
+                    }
+                    read_size => Ok(read_size as usize)
+                }
+            }
+        }
     }
 
     fn write_sector(&mut self, _n: u64, _buf: &[u8]) -> io::Result<usize> {

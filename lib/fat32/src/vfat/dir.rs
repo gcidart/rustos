@@ -10,7 +10,6 @@ use crate::traits;
 use crate::util::VecExt;
 use crate::vfat::{Attributes, Date, Metadata, Time, Timestamp};
 use crate::vfat::{Cluster, Entry, File, VFatHandle};
-use std::char::{decode_utf16, REPLACEMENT_CHARACTER};
 #[derive(Debug)]
 pub struct Dir<HANDLE: VFatHandle> {
     pub vfat: HANDLE,
@@ -95,6 +94,15 @@ impl<HANDLE: VFatHandle> Dir<HANDLE> {
                                 return Err(newioerr!(InvalidInput, "invalid UTF-8"));
                             }
                         },
+                        Entry::FILE(f) => {
+                            if let Some(ps) = name.as_ref().to_str() {
+                                if ps.eq_ignore_ascii_case(&f.file_name) {
+                                    return Ok(e);
+                                }
+                            } else {
+                                return Err(newioerr!(InvalidInput, "invalid UTF-8"));
+                            }
+                        },
                         _ => continue,
                     };
                 },
@@ -156,9 +164,7 @@ impl<HANDLE: VFatHandle> Iterator for EntryIterator<HANDLE> {
                         vec.push(vflde.name_char_3[i]);
                     }
                 }
-                filename_vec[(vflde.seq_no & 0x1f) as usize] = decode_utf16(vec.iter().cloned())
-                        .map(|r| r.unwrap_or(REPLACEMENT_CHARACTER))
-                        .collect::<String>();
+                filename_vec[(vflde.seq_no & 0x1f) as usize] = String::from_utf16(&vec).unwrap();
                 self.offset += 32;
             } else {
                 let vfrde = unsafe {vfde.regular};
@@ -193,8 +199,8 @@ impl<HANDLE: VFatHandle> Iterator for EntryIterator<HANDLE> {
                     }
                     fnv.resize(filename_size, 0);
                     if filename_size > 0 {
-                        let regular_filename = std::str::from_utf8(&fnv).unwrap();
-                        filename.push_str(regular_filename);
+                        let regular_filename = String::from_utf8(fnv).unwrap();
+                        filename.push_str(&regular_filename);
                     }
                     let mut fev = vfrde.file_ext.to_vec();
                     let mut fileext_size  = 3;
@@ -207,8 +213,8 @@ impl<HANDLE: VFatHandle> Iterator for EntryIterator<HANDLE> {
                     fev.resize(fileext_size, 0);
                     if fileext_size > 0 {
                         filename.push_str(".");
-                        let regular_extname = std::str::from_utf8(&fev).unwrap();
-                        filename.push_str(regular_extname);
+                        let regular_extname = String::from_utf8(fev).unwrap();
+                        filename.push_str(&regular_extname);
                     }
                 }
                 let fcn: u32 = (vfrde.first_cluster_high as u32)<<16 | (vfrde.first_cluster_low as u32);

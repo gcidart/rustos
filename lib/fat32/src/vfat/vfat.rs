@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use core::mem::size_of;
 
 use alloc::vec::Vec;
-
+use alloc::string::String;
 use shim::io;
 use shim::ioerr;
 use shim::newioerr;
@@ -15,7 +15,6 @@ use crate::traits::{BlockDevice, FileSystem};
 use crate::util::SliceExt;
 use crate::vfat::{BiosParameterBlock, CachedPartition, Partition};
 use crate::vfat::{Cluster, Dir, Entry, Error, FatEntry, File, Status};
-use std::convert::TryFrom;
 
 /// A generic trait that handles a critical section as a closure
 pub trait VFatHandle: Clone + Debug + Send + Sync {

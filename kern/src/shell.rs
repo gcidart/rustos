@@ -2,17 +2,17 @@ use shim::io;
 use shim::path::{Path, PathBuf};
 
 use stack_vec::StackVec;
-
+use alloc::vec::Vec;
+use alloc::string::String;
 use pi::atags::Atags;
 
-//use std; //TODO
 
-//use fat32::traits::FileSystem;
-//use fat32::traits::{Dir, Entry};
+use fat32::traits::FileSystem;
+use fat32::traits::{Dir, Entry};
 
 use crate::console::{kprint, kprintln, CONSOLE};
 use crate::ALLOCATOR;
-//use crate::FILESYSTEM;
+use crate::FILESYSTEM;
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -55,6 +55,7 @@ impl<'a> Command<'a> {
 
 /// Starts a shell using `prefix` as the prefix for each line.
 pub fn shell(prefix: &str) -> ! {
+    let mut path = PathBuf::from("/");
     loop {
         kprint!("\n\r");
         kprint!("{}",prefix);
@@ -95,7 +96,6 @@ pub fn shell(prefix: &str) -> ! {
                         kprint!("{} ",cmd.args[i]);
                     }
                 } else if cmd.path()=="panic" {
-                    //std::String::from("Test Panic");
                     panic!();
                 } else if cmd.path()=="atag" {
                     let mut atag = Atags::get(); 
@@ -105,6 +105,14 @@ pub fn shell(prefix: &str) -> ! {
                             None => break,
                         }
                     }
+                } else if cmd.path()=="ls" {
+                    ls_function(&cmd, &path);
+                } else if cmd.path()=="pwd" {
+                    cwd_function(&path);
+                } else if cmd.path()=="cd" {
+                    cd_function(&cmd, &mut path);
+                } else if cmd.path()=="cat" {
+                    cat_function(&cmd, &path);
                 } else {
                     kprint!("unknown command: {}", cmd.path());
                 }
@@ -116,6 +124,97 @@ pub fn shell(prefix: &str) -> ! {
                 kprint!("\n\r");
                 kprint!("error: too many arguments");
             }
+        }
+    }
+}
+
+fn ls_function(cmd: &Command, cwd_path: &PathBuf) {
+    if cmd.args.len()==1 {
+        let entries: Vec<_> = FILESYSTEM.open_dir(cwd_path).unwrap().entries().expect("entries interator").collect();
+        for entry in entries.iter() {
+            kprintln!("{}", entry.name());
+        }
+    } else if cmd.args.len()==2 {
+        let mut cwd_path_clone = cwd_path.clone();
+        let path = PathBuf::from(cmd.args[1]);
+        merge_paths(&mut cwd_path_clone, &path);
+        match FILESYSTEM.open_dir(cwd_path_clone) {
+            Ok(dir) => match dir.entries() {
+                Ok(itr) => {
+                    let entries : Vec<_> = itr.collect();
+                    for entry in entries.iter() {
+                        kprintln!("{}", entry.name());
+                    }
+                },
+                Err(_) => kprintln!("Error in getting the entries for the directory")
+            }
+            Err(_) => kprintln!("Invalid input")
+        };
+    } else {
+        kprintln!("Incorrect command\n ls [directory path]");
+    }
+}
+
+fn cwd_function(cwd_path: &PathBuf) {
+    kprintln!("{}", cwd_path.to_str().unwrap());
+}
+
+fn cd_function(cmd: &Command, cwd_path: &mut PathBuf) {
+    if cmd.args.len()==2 {
+        let mut cwd_path_clone = cwd_path.clone();
+        let path = PathBuf::from(cmd.args[1]);
+        merge_paths(&mut cwd_path_clone, &path);
+        match FILESYSTEM.open_dir(cwd_path_clone) {
+            Ok(_) => merge_paths(cwd_path, &path),
+            Err(_) => kprintln!("Directory does not exist"),
+        };
+    } else {
+        kprintln!("Incorrect command\n cd <directory path>");
+    }
+}
+
+fn cat_function(cmd: &Command, cwd_path: &PathBuf) {
+    use io::Read;
+    if cmd.args.len()>=2 {
+        for i in 1..cmd.args.len() {
+            let mut cwd_path_clone = cwd_path.clone();
+            let path = PathBuf::from(cmd.args[i]);
+            merge_paths(&mut cwd_path_clone, &path);
+            match FILESYSTEM.open_file(cwd_path_clone.as_path()) {
+                Ok(mut file) => loop{
+                    let mut buffer = Vec::new();
+                    buffer.resize(4096, 0);
+                    match file.read(&mut buffer) {
+                        Ok(0) => break,
+                        //Ok(read_size) => kprint!("{:?}", String::from_utf8(buffer[..read_size].to_vec()).unwrap()),
+                        Ok(read_size) => match String::from_utf8(buffer[..read_size].to_vec()){
+                            Ok(s) => kprint!("{}", s),
+                            Err(e) => {
+                                kprintln!("{:?}", e);
+                                break;
+                            },
+                        },
+                        _ => kprintln!("\n error reading file"),
+                    };
+                }   
+                Err(e) => kprintln!("Invalid input {:?}", e)
+            };
+        }
+    } else {
+        kprintln!("Incorrect command\n cat <file path....>");
+    }
+}
+
+fn merge_paths(path: &mut PathBuf, rel_path: &PathBuf) {
+    let components: Vec<_> = rel_path.components().map(|comp| comp.as_os_str()).collect();
+    for component in components {
+        let chk1 = component.to_str().unwrap()=="..";
+        let chk2 = component.to_str().unwrap()==".";
+        let tpath = PathBuf::from(component.to_str().unwrap());
+        if chk1 {
+            path.pop();
+        } else if !chk2{
+            path.push(tpath);
         }
     }
 }

@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use shim::io::{self, SeekFrom};
 
@@ -46,7 +47,10 @@ impl<HANDLE:VFatHandle> io::Read for File<HANDLE> {
         let mut vec : Vec<u8> = Vec::new();
         self.vfat.lock(|vfat_instance| {vfat_instance.read_chain(self.first_cluster,&mut vec).unwrap()});
         let start = self.file_offset;
-        let end = std::cmp::min(self.file_offset + buf.len(), self.file_size as usize);
+        let mut end = self.file_size as usize;
+        if end > self.file_offset + buf.len() {
+            end = self.file_offset + buf.len();
+        }
         if start==end {
             return Ok(0);
         }
