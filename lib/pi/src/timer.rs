@@ -35,6 +35,13 @@ impl Timer {
         let counter_value: u64 = ((self.registers.CHI.read() as u64)<<32) + (self.registers.CLO.read( ) as u64);
         Duration::new(counter_value/1000_000, ((counter_value%1000_000)*1000) as u32)
     }
+
+    /// Sets up a match in timer 1 to occur `t` duration from now. If
+    /// interrupts for timer 1 are enabled and IRQs are unmasked, then a timer
+    /// interrupt will be issued in `t` duration.
+    pub fn tick_in(&mut self, t: Duration) {
+        unimplemented!()
+    }
 }
 
 /// Returns current time.
@@ -49,4 +56,11 @@ pub fn spin_sleep(t: Duration) {
     while (current_time() - ini) < t {
         continue;
     }
+}
+
+/// Sets up a match in timer 1 to occur `t` duration from now. If
+/// interrupts for timer 1 are enabled and IRQs are unmasked, then a timer
+/// interrupt will be issued in `t` duration.
+pub fn tick_in(t: Duration) {
+    unimplemented!()
 }
