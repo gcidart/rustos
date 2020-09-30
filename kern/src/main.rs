@@ -46,7 +46,14 @@ fn kmain() -> ! {
        ALLOCATOR.initialize();
        FILESYSTEM.initialize();
     }
-
+    use aarch64::current_el;
     kprintln!("Welcome to cs3210!");
-    shell::shell("> ");
+    unsafe {
+        kprintln!("Current Exception Level: {}", current_el());
+    }
+    use aarch64::brk;
+    brk!(12);
+    loop{
+        shell::shell("> ");
+    }
 }

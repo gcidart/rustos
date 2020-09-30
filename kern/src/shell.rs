@@ -54,7 +54,7 @@ impl<'a> Command<'a> {
 }
 
 /// Starts a shell using `prefix` as the prefix for each line.
-pub fn shell(prefix: &str) -> ! {
+pub fn shell(prefix: &str)  {
     let mut path = PathBuf::from("/");
     loop {
         kprint!("\n\r");
@@ -113,6 +113,8 @@ pub fn shell(prefix: &str) -> ! {
                     cd_function(&cmd, &mut path);
                 } else if cmd.path()=="cat" {
                     cat_function(&cmd, &path);
+                } else if cmd.path()=="exit" {
+                    return;
                 } else {
                     kprint!("unknown command: {}", cmd.path());
                 }
