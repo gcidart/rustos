@@ -66,7 +66,36 @@ impl GlobalScheduler {
     /// Starts executing processes in user space using timer interrupt based
     /// preemptive scheduling. This method should not return under normal conditions.
     pub fn start(&self) -> ! {
-        unimplemented!("GlobalScheduler::start()")
+        use crate::run_shell;
+        use crate::init::_start;
+        let sptr: u64; 
+        unsafe {
+            asm!("mov $0, sp"  //Store Current Stack Pointer to sptr            
+                 : "=r"(sptr) ::: "volatile");
+        }
+        let mut frame : TrapFrame = TrapFrame::default();
+        let fptr = (&frame as *const _ as u64);
+        use crate::process::Stack;
+        let st = Stack::new().unwrap();
+        frame.sp_el0 = st.top().as_u64(); 
+        frame.elr_el1 = run_shell as *const() as u64;
+        //Stored in frame.x[27] as after context restore original SP will be available in reg x27
+        frame.x[27] = sptr; 
+        unsafe {
+            asm!("mov sp, $0
+                  bl context_restore"
+                  :: "r"(fptr)
+                  :: "volatile");
+        }
+        // Restore SP to original value and clear x27 to avoid leaking info to user level process
+        unsafe {
+            asm!("mov sp, x27
+                  mov x27, #0    
+                  eret"
+                  :::: "volatile");
+        }
+        loop {
+        }
     }
 
     /// Initializes the scheduler and add userspace processes to the Scheduler

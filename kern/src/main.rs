@@ -40,20 +40,33 @@ pub static SCHEDULER: GlobalScheduler = GlobalScheduler::uninitialized();
 pub static VMM: VMManager = VMManager::uninitialized();
 pub static IRQ: Irq = Irq::uninitialized();
 
+extern fn run_shell() {
+    unsafe { asm!("brk 1" :::: "volatile"); }
+    unsafe { asm!("brk 2" :::: "volatile"); }
+    shell::shell("user0> ");
+    unsafe { asm!("brk 3" :::: "volatile"); }
+    loop { shell::shell("user1> "); }
+}
+
 fn kmain() -> ! {
     timer::spin_sleep(core::time::Duration::from_millis(3000));
-    unsafe {
-       ALLOCATOR.initialize();
-       FILESYSTEM.initialize();
-    }
     use aarch64::current_el;
-    kprintln!("Welcome to cs3210!");
     unsafe {
         kprintln!("Current Exception Level: {}", current_el());
     }
+    unsafe {
+       ALLOCATOR.initialize();
+       FILESYSTEM.initialize();
+       SCHEDULER.start();
+    }
+    //Not reachable because of SCHEDULER.start()
+    /*kprintln!("Welcome to cs3210!");
     use aarch64::brk;
+    use aarch64::svc;
     brk!(12);
+    svc!(3);
     loop{
         shell::shell("> ");
-    }
+    }*/
 }
+

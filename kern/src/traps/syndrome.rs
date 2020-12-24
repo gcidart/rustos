@@ -14,7 +14,7 @@ pub enum Fault {
 impl From<u32> for Fault {
     fn from(val: u32) -> Fault {
         let iss_hsvs = ESR_EL1:: get_value(val as u64, ESR_EL1::ISS_HSVC_IMM);
-        let fault = (iss_hsvs & 0b111111) ;
+        let fault = iss_hsvs & 0b111111 ;
         match fault {
             0b000000 => Fault::AddressSize,
             0b000001 => Fault::AddressSize,

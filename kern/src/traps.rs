@@ -50,9 +50,17 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             tf.elr_el1+= 4;  // Synchronous Exception
             kprintln!("Debug shell exited");
         },
-        _      => loop {
+        Syndrome::Svc(y) => {
+            kprintln!("Svc{:?} encountered", y);
+        },
+        Syndrome::DataAbort {
+            kind:x, level: y
+            }=> {
+            kprintln!("DataAbort encountered Kind:{:?} Level:{:?}", x, y);
+        },
+
+        _      =>  {
             kprintln!("Info: {:?} ESR: {:?}", info, esr);
-            aarch64::nop();
         },
     }
 }

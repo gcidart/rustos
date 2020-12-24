@@ -31,11 +31,11 @@ context_save:
     stp     q4, q5, [SP, #-32]!
     stp     q2, q3, [SP, #-32]!
     stp     q0, q1, [SP, #-32]!
-    mrs     x0, tpidr_el0
-    mrs     x1, sp_el0
+    mrs     x1, tpidr_el0
+    mrs     x0, sp_el0
     stp     x0, x1, [SP, #-16]!
-    mrs     x0, spsr_el1
-    mrs     x1, elr_el1
+    mrs     x1, spsr_el1
+    mrs     x0, elr_el1
     stp     x0, x1, [SP, #-16]!  // Trap Frame ends
     mov     x0, x29
     mov     x28, lr
@@ -47,11 +47,11 @@ context_save:
 context_restore:
     //Restore the context from the stack.
     ldp     x0, x1, [SP], #16
-    msr     elr_el1, x1
-    msr     spsr_el1, x0
+    msr     elr_el1, x0
+    msr     spsr_el1, x1
     ldp     x0, x1, [SP], #16
-    msr     sp_el0, x1
-    msr     tpidr_el0, x0
+    msr     sp_el0, x0
+    msr     tpidr_el0, x1
     ldp     q0, q1, [SP], #32
     ldp     q2, q3, [SP], #32
     ldp     q4, q5, [SP], #32
