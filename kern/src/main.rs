@@ -48,6 +48,10 @@ extern fn run_shell() {
     loop { shell::shell("user1> "); }
 }
 
+extern fn run_shell_dup() {
+    loop { shell::shell("dup> "); }
+}
+
 fn kmain() -> ! {
     timer::spin_sleep(core::time::Duration::from_millis(3000));
     use aarch64::current_el;
@@ -58,6 +62,7 @@ fn kmain() -> ! {
        ALLOCATOR.initialize();
        FILESYSTEM.initialize();
        IRQ.initialize();
+       SCHEDULER.initialize();
        SCHEDULER.start();
     }
     //Not reachable because of SCHEDULER.start()
