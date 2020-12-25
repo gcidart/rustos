@@ -43,6 +43,12 @@ pub struct Info {
 #[no_mangle]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     use crate::console::kprintln;
+
+    if info.kind == Kind::Irq {
+        crate::IRQ.invoke(Interrupt::Timer1, tf);
+        return;
+    }
+        
     match Syndrome::from(esr) {
         Syndrome::Brk(x) => {
             kprintln!("Brk{:?} encountered", x);

@@ -63,18 +63,24 @@ impl GlobalScheduler {
         self.critical(|scheduler| scheduler.kill(tf))
     }
 
+
     /// Starts executing processes in user space using timer interrupt based
     /// preemptive scheduling. This method should not return under normal conditions.
     pub fn start(&self) -> ! {
         use crate::run_shell;
-        use crate::init::_start;
+        use pi::timer::tick_in;
+        use pi::interrupt::{Controller, Interrupt};
+        crate::IRQ.register(Interrupt::Timer1, Box::new(timer1_handler));
+        let mut controller = Controller::new();
+        controller.enable(Interrupt::Timer1);
+        tick_in(TICK);
         let sptr: u64; 
         unsafe {
             asm!("mov $0, sp"  //Store Current Stack Pointer to sptr            
                  : "=r"(sptr) ::: "volatile");
         }
         let mut frame : TrapFrame = TrapFrame::default();
-        let fptr = (&frame as *const _ as u64);
+        let fptr = &frame as *const _ as u64;
         use crate::process::Stack;
         let st = Stack::new().unwrap();
         frame.sp_el0 = st.top().as_u64(); 
@@ -193,3 +199,7 @@ pub extern "C" fn  test_user_process() -> ! {
     }
 }
 
+pub fn timer1_handler(tf: &mut TrapFrame) {
+    crate::console::kprintln!("Timer interrupt after {:?}", TICK);
+    pi::timer::tick_in(TICK);
+}
