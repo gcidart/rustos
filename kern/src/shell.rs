@@ -113,6 +113,8 @@ pub fn shell(prefix: &str)  {
                     cd_function(&cmd, &mut path);
                 } else if cmd.path()=="cat" {
                     cat_function(&cmd, &path);
+                } else if cmd.path()=="sleep" {
+                    sleep_function(&cmd);
                 } else if cmd.path()=="exit" {
                     return;
                 } else {
@@ -220,3 +222,20 @@ fn merge_paths(path: &mut PathBuf, rel_path: &PathBuf) {
         }
     }
 }
+
+fn sleep_function(cmd: &Command) {
+    if cmd.args.len()!= 2 {
+        kprintln!("Incorrect command\n sleep <duration in ms>");
+    }
+    let delay ;
+    match cmd.args[1].parse::<u32>() {
+        Ok(d) => delay = core::time::Duration::from_millis(d as u64),
+        _   => {
+            kprintln!("Incorrect command\n sleep <duration in ms>");
+            return;
+        }
+    }
+    kprintln!("sleep {:?}", delay);
+    kprintln!("slept for {:?}", kernel_api::syscall::sleep(delay).unwrap());
+}
+

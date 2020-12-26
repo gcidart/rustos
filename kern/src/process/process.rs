@@ -112,8 +112,8 @@ impl Process {
         match state {
             State::Waiting(mut event_poll_fn) =>
             {
-                if event_poll_fn(self) {
-                    core::mem::replace(&mut self.state, State::Ready);
+                if !event_poll_fn(self) {
+                    self.state = State::Waiting(event_poll_fn);
                 }
             },
             _ =>  {core::mem::replace(&mut self.state, state);}
