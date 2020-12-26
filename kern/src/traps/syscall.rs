@@ -26,7 +26,6 @@ pub fn sys_sleep(ms: u32, tf: &mut TrapFrame) {
             crate::console::kprintln!("{:?} > {:?} + {:?}", curr_time, ini_time, sleep_dur);
             true 
         } else {
-            crate::console::kprintln!("{:?} < {:?} + {:?}", curr_time, ini_time, sleep_dur);
             false
         }
     });

@@ -31,6 +31,9 @@ context_save:
     stp     q4, q5, [SP, #-32]!
     stp     q2, q3, [SP, #-32]!
     stp     q0, q1, [SP, #-32]!
+    mrs     x1, ttbr1_el1
+    mrs     x0, ttbr0_el1
+    stp     x0, x1, [SP, #-16]!
     mrs     x1, tpidr_el0
     mrs     x0, sp_el0
     stp     x0, x1, [SP, #-16]!
@@ -52,6 +55,13 @@ context_restore:
     ldp     x0, x1, [SP], #16
     msr     sp_el0, x0
     msr     tpidr_el0, x1
+    ldp     x0, x1, [SP], #16
+    msr     ttbr0_el1, x0
+    msr     ttbr1_el1, x1
+    dsb     ishst
+    tlbi    vmalle1
+    dsb     ish
+    isb
     ldp     q0, q1, [SP], #32
     ldp     q2, q3, [SP], #32
     ldp     q4, q5, [SP], #32
