@@ -57,7 +57,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             kprintln!("Debug shell exited");
         },
         Syndrome::Svc(y) => {
-            kprintln!("Svc{:?} encountered", y);
+            //kprintln!("Svc{:?} encountered", y);
             handle_syscall(y, tf);
         },
         Syndrome::DataAbort {

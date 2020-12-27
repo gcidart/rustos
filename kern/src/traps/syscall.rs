@@ -23,7 +23,7 @@ pub fn sys_sleep(ms: u32, tf: &mut TrapFrame) {
         process.context.x[7] = 1;
         process.context.x[0] = (curr_time.as_millis() - ini_time.as_millis()) as u64;
         if curr_time > ini_time + sleep_dur {
-            crate::console::kprintln!("{:?} > {:?} + {:?}", curr_time, ini_time, sleep_dur);
+            //crate::console::kprintln!("{:?} > {:?} + {:?}", curr_time, ini_time, sleep_dur);
             true 
         } else {
             false
@@ -42,14 +42,20 @@ pub fn sys_sleep(ms: u32, tf: &mut TrapFrame) {
 ///  - current time as seconds
 ///  - fractional part of the current time, in nanoseconds.
 pub fn sys_time(tf: &mut TrapFrame) {
-    unimplemented!("sys_time()");
+    use pi::timer::current_time;
+    let curr_time = current_time();
+    tf.x[7] = 1;
+    tf.x[0] = curr_time.as_secs();
+    tf.x[1] = curr_time.subsec_nanos().into();
 }
 
 /// Kills current process.
 ///
 /// This system call does not take paramer and does not return any value.
 pub fn sys_exit(tf: &mut TrapFrame) {
-    unimplemented!("sys_exit()");
+    //Can't use SCHEDULER.kill(tf) as the user programs effectively have a empty loop after NR_EXIT
+    //call. Kill() drops the process pagtables which causes Instruction Abort for loop statement
+    SCHEDULER.switch(State::Dead, tf);
 }
 
 /// Write to console.
@@ -58,7 +64,8 @@ pub fn sys_exit(tf: &mut TrapFrame) {
 ///
 /// It only returns the usual status value.
 pub fn sys_write(b: u8, tf: &mut TrapFrame) {
-    unimplemented!("sys_write()");
+    tf.x[7] = 1;
+    CONSOLE.lock().write_byte(b);
 }
 
 /// Returns current process's ID.
@@ -68,13 +75,17 @@ pub fn sys_write(b: u8, tf: &mut TrapFrame) {
 /// In addition to the usual status value, this system call returns a
 /// parameter: the current process's ID.
 pub fn sys_getpid(tf: &mut TrapFrame) {
-    unimplemented!("sys_getpid()");
+    tf.x[7] = 1;
+    tf.x[0] = tf.tpidr_el0;
 }
 
 pub fn handle_syscall(num: u16, tf: &mut TrapFrame) {
-    use crate::console::kprintln;
-    match num {
-        1 => sys_sleep(tf.x[0] as u32, tf),
+    match num as usize{
+        NR_SLEEP => sys_sleep(tf.x[0] as u32, tf),
+        NR_TIME => sys_time(tf),
+        NR_EXIT => sys_exit(tf),
+        NR_WRITE => sys_write(tf.x[0] as u8, tf),
+        NR_GETPID => sys_getpid(tf),
         _ => {}
     }
 }

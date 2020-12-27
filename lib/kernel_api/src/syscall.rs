@@ -39,19 +39,57 @@ pub fn sleep(span: Duration) -> OsResult<Duration> {
 }
 
 pub fn time() -> Duration {
-    unimplemented!("time()");
+    let mut ecode: u64;
+    let mut curr_sec: u64;
+    let mut curr_subsec: u64;
+    unsafe {
+        asm!("svc $3
+              mov $0, x0
+              mov $1, x1
+              mov $2, x7"
+             : "=r"(curr_sec), "=r"(curr_subsec), "=r"(ecode)
+             : "i"(NR_TIME)
+             : "x0", "x1", "x7"
+             : "volatile");
+    }
+
+    Duration::new(curr_sec, curr_subsec as u32)
+
 }
 
 pub fn exit() -> ! {
-    unimplemented!("exit()");
+    unsafe {
+        asm!("svc $0"::"i"(NR_EXIT)::"volatile");
+    }
+    loop {}
 }
 
 pub fn write(b: u8) {
-    unimplemented!("write()");
+    let mut ecode: u64;
+    unsafe {
+        asm!("mov x0, $1
+              svc $2
+              mov $0, x7"
+              : "=r"(ecode)
+              : "r"(b), "i"(NR_WRITE)
+              : "x0", "x7"
+              : "volatile");
+    }
 }
 
 pub fn getpid() -> u64 {
-    unimplemented!("getpid()");
+    let mut ecode: u64;
+    let mut pid: u64;
+    unsafe {
+        asm!("svc $2
+              mov $0, x0
+              mov $1, x7"
+              : "=r"(pid), "=r"(ecode)
+              : "i"(NR_GETPID)
+              : "x0", "x7"
+              : "volatile");
+    }
+    pid
 }
 
 
