@@ -2,9 +2,9 @@ ROOT := $(shell git rev-parse --show-toplevel)
 
 KERN := kernel
 TARGET := target/aarch64-unknown-none/release/${KERN}
-SDCARD ?= $(ROOT)/ext/fat32-imgs/mock1.fat32.img
+#SDCARD ?= $(ROOT)/ext/fat32-imgs/mock1.fat32.img
 OBJCPY := /usr/lib/llvm-8/bin/llvm-objcopy -strip-all -O binary
-# SDCARD ?= $(ROOT)/user/fs.img
+SDCARD ?= $(ROOT)/user/fs.img
 TTY_PATH := /dev/ttyUSB0
 QEMU_ARGS ?=
 

@@ -19,7 +19,7 @@ pub struct Process {
     /// The saved trap frame of a process.
     pub context: Box<TrapFrame>,
     /// The memory allocation used for the process's stack.
-    pub stack: Stack,
+    //pub stack: Stack,
     /// The page table describing the Virtual Memory of the process
     pub vmap: Box<UserPageTable>,
     /// The scheduling state of the process.
@@ -38,7 +38,7 @@ impl Process {
             Some(st) => 
                 Ok(Process {
                     context : Box::new(TrapFrame::default()),
-                    stack : st,
+                    //stack : st,
                     vmap : Box::new(UserPageTable::new()),
                     state : State::Ready
                 })
@@ -58,8 +58,12 @@ impl Process {
         use crate::VMM;
 
         let mut p = Process::do_load(pn)?;
-
-        //FIXME: Set trapframe for the process.
+        p.context.elr_el1 = USER_IMG_BASE as u64;
+        p.context.ttbr0_el1 = VMM.get_baddr().as_u64();
+        p.context.ttbr1_el1 = p.vmap.as_ref().get_baddr().as_u64();
+        p.context.spsr_el1 = (0b1<<9) | //'D'
+                             (0b1<<8) | //'A'
+                             (0b1<<6) ;//'F'
 
         Ok(p)
     }
@@ -68,18 +72,54 @@ impl Process {
     /// Allocates one page for stack with read/write permission, and N pages with read/write/execute
     /// permission to load file's contents.
     fn do_load<P: AsRef<Path>>(pn: P) -> OsResult<Process> {
-        unimplemented!();
+        use core::ops::AddAssign;
+        use fat32::traits::FileSystem;
+        use io::Read;
+        crate::console::kprintln!("{:?} program ", pn.as_ref().as_os_str());
+        match crate::FILESYSTEM.open_file(pn) {
+            Ok(mut file) => {
+                let mut vmap = Box::new(UserPageTable::new());
+                let mut va =  VirtualAddr::from(USER_IMG_BASE as u64);
+                let mut context =  Box::new(TrapFrame::default());
+                loop {
+                    let mut buffer = vmap.alloc(va, PagePerm::RWX);
+                    match file.read(&mut buffer) {
+                        Ok(PAGE_SIZE) => va.add_assign(VirtualAddr::from(PAGE_SIZE as u64)),
+                        Ok(_) => break,
+                        Err(_) => return Err(OsError::IoError),
+                    }
+                }
+                //allocate stack memory
+                va.add_assign(VirtualAddr::from(PAGE_SIZE as u64));
+                vmap.alloc(va, PagePerm::RW);
+                context.sp_el0 = (va.as_usize()+ PAGE_SIZE - PAGE_ALIGN) as u64;
+                Ok (Process {
+                    context : context,
+                    vmap : vmap,
+                    state : State::Ready
+                })
+
+
+            },
+            _ => {
+                crate::console::kprintln!("program not found");
+                Err(OsError::NoEntry)
+            }
+
+        }
+                
+
     }
 
     /// Returns the highest `VirtualAddr` that is supported by this system.
     pub fn get_max_va() -> VirtualAddr {
-        unimplemented!();
+        VirtualAddr::from(USER_IMG_BASE +  USER_MAX_VM_SIZE -1)
     }
 
     /// Returns the `VirtualAddr` represents the base address of the user
     /// memory space.
     pub fn get_image_base() -> VirtualAddr {
-        unimplemented!();
+        VirtualAddr::from(USER_IMG_BASE)
     }
 
     /// Returns the `VirtualAddr` represents the base address of the user

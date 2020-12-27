@@ -106,23 +106,30 @@ impl GlobalScheduler {
 
     /// Initializes the scheduler and add userspace processes to the Scheduler
     pub unsafe fn initialize(&self) {
+        use shim::path::Path;
         *self.0.lock() = Some(Scheduler::new());
         let mut process1  = Process::new().unwrap();
         //process1.context.elr_el1 = crate::run_shell as *const() as u64;
-        process1.context.elr_el1 = USER_IMG_BASE as u64;
+        /*process1.context.elr_el1 = USER_IMG_BASE as u64;
         process1.context.ttbr0_el1 = VMM.get_baddr().as_u64();
         process1.context.ttbr1_el1 = process1.vmap.as_ref().get_baddr().as_u64();
         process1.context.sp_el0 = process1.stack.top().as_u64();
-        self.test_phase_3(&mut process1);
+        self.test_phase_3(&mut process1);*/
+        let process1 = Process::load(Path::new("/sleep")).unwrap();
         self.add(process1);
-        let mut process2  = Process::new().unwrap();
+        //let mut process2  = Process::new().unwrap();
         //process2.context.elr_el1 = crate::run_shell_dup as *const() as u64;
-        process2.context.elr_el1 = USER_IMG_BASE as u64;
+        /*process2.context.elr_el1 = USER_IMG_BASE as u64;
         process2.context.ttbr0_el1 = VMM.get_baddr().as_u64();
         process2.context.ttbr1_el1 = process2.vmap.as_ref().get_baddr().as_u64();
         process2.context.sp_el0 = process2.stack.top().as_u64();
-        self.test_phase_3(&mut process2);
+        self.test_phase_3(&mut process2);*/
+        let process2 = Process::load(Path::new("/sleep")).unwrap();
         self.add(process2);
+        let process3 = Process::load(Path::new("/sleep")).unwrap();
+        self.add(process3);
+        let process4 = Process::load(Path::new("/sleep")).unwrap();
+        self.add(process4);
     }
 
     // The following method may be useful for testing Phase 3:

@@ -2,7 +2,7 @@ ROOT := $(shell git rev-parse --show-toplevel)
 
 BIN := $(shell basename $(shell realpath .))
 TARGET := target/aarch64-unknown-none/release/$(BIN)
-OBJCPY := cargo objcopy -- --strip-all -O binary
+OBJCPY := /usr/lib/llvm-8/bin/llvm-objcopy -strip-all -O binary
 
 .PHONY: all build qemu objdump nm clean
 
