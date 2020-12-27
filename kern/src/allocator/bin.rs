@@ -14,7 +14,7 @@ use crate::allocator::LocalAlloc;
 ///   
 ///   map_to_bin(size) -> k
 ///   
-const NUM_BINS: usize = 11; /*Corresponds to 8192 bytes*/
+const NUM_BINS: usize = 18; /*Corresponds to 1024x1024 bytes*/
 /// Returns the bin number for the layout provided  
 fn bin_index(layout: Layout) -> usize {
     // Size of the memory to be allocated is maximum of requested size and 

@@ -22,7 +22,7 @@ impl From<u32> for Fault {
             0b000011 => Fault::AddressSize,
             0b000100 => Fault::Translation,
             0b000101 => Fault::Translation,
-            0b000111 => Fault::Translation,
+            0b000110 => Fault::Translation,
             0b000111 => Fault::Translation,
             0b001001 => Fault::AccessFlag,
             0b001010 => Fault::AccessFlag,

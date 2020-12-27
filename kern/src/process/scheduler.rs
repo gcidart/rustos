@@ -108,12 +108,20 @@ impl GlobalScheduler {
     pub unsafe fn initialize(&self) {
         *self.0.lock() = Some(Scheduler::new());
         let mut process1  = Process::new().unwrap();
-        process1.context.elr_el1 = crate::run_shell as *const() as u64;
+        //process1.context.elr_el1 = crate::run_shell as *const() as u64;
+        process1.context.elr_el1 = USER_IMG_BASE as u64;
+        process1.context.ttbr0_el1 = VMM.get_baddr().as_u64();
+        process1.context.ttbr1_el1 = process1.vmap.as_ref().get_baddr().as_u64();
         process1.context.sp_el0 = process1.stack.top().as_u64();
+        self.test_phase_3(&mut process1);
         self.add(process1);
         let mut process2  = Process::new().unwrap();
-        process2.context.elr_el1 = crate::run_shell_dup as *const() as u64;
+        //process2.context.elr_el1 = crate::run_shell_dup as *const() as u64;
+        process2.context.elr_el1 = USER_IMG_BASE as u64;
+        process2.context.ttbr0_el1 = VMM.get_baddr().as_u64();
+        process2.context.ttbr1_el1 = process2.vmap.as_ref().get_baddr().as_u64();
         process2.context.sp_el0 = process2.stack.top().as_u64();
+        self.test_phase_3(&mut process2);
         self.add(process2);
     }
 
@@ -121,18 +129,18 @@ impl GlobalScheduler {
     //
     // * A method to load a extern function to the user process's page table.
     //
-    // pub fn test_phase_3(&self, proc: &mut Process){
-    //     use crate::vm::{VirtualAddr, PagePerm};
-    //
-    //     let mut page = proc.vmap.alloc(
-    //         VirtualAddr::from(USER_IMG_BASE as u64), PagePerm::RWX);
-    //
-    //     let text = unsafe {
-    //         core::slice::from_raw_parts(test_user_process as *const u8, 24)
-    //     };
-    //
-    //     page[0..24].copy_from_slice(text);
-    // }
+    pub fn test_phase_3(&self, proc: &mut Process){
+        use crate::vm::{VirtualAddr, PagePerm};
+    
+        let mut page = proc.vmap.alloc(
+            VirtualAddr::from(USER_IMG_BASE as u64), PagePerm::RWX);
+   
+        let text = unsafe {
+            core::slice::from_raw_parts(test_user_process as *const u8, 24)
+        };
+    
+        page[0..24].copy_from_slice(text);
+    }
 }
 
 #[derive(Debug)]
@@ -186,7 +194,10 @@ impl Scheduler {
         for process in self.processes.iter() {
             if process.context.tpidr_el0 == tf.tpidr_el0 {
                 match process.state {
-                    State::Running => { break; },
+                    State::Running => { 
+                        crate::console::kprintln!("Process{:?} scheduled out with new state {:?}", tf.tpidr_el0, new_state);
+                        break; 
+                    },
                     _ => { idx = idx + 1; }
                 }
             }
@@ -215,6 +226,7 @@ impl Scheduler {
         let mut idx = 0;
         for process in self.processes.iter_mut() {
             if process.is_ready() {
+                crate::console::kprintln!("Process{:?} now running", process.context.tpidr_el0);
                 break;
             }
             else {
