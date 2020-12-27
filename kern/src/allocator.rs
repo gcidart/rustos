@@ -12,7 +12,6 @@ mod tests;
 use core::alloc::{GlobalAlloc, Layout};
 use core::fmt;
 
-use crate::console::kprintln;
 use crate::mutex::Mutex;
 use pi::atags::{Atag, Atags};
 
@@ -44,6 +43,7 @@ impl Allocator {
     /// Panics if the system's memory map could not be retrieved.
     pub unsafe fn initialize(&self) {
         let (start, end) = memory_map().expect("failed to find memory map");
+        info!("heap beg: {:x}, end: {:x}", start, end);
         *self.0.lock() = Some(AllocatorImpl::new(start, end));
     }
 }
@@ -95,7 +95,6 @@ pub fn memory_map() -> Option<(usize, usize)> {
         }
     }
     let end = util::align_down(end as usize, page_size);
-    kprintln!("Memory Map Start:{} End:{}", start, end);
     Some((start, end))
 }
 

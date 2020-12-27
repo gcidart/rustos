@@ -236,6 +236,5 @@ fn sleep_function(cmd: &Command) {
         }
     }
     kprintln!("sleep {:?}", delay);
-    kprintln!("slept for {:?}", kernel_api::syscall::sleep(delay).unwrap());
 }
 

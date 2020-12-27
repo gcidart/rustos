@@ -100,7 +100,7 @@ impl L3PageTable {
 #[repr(align(65536))]
 pub struct PageTable {
     pub l2: L2PageTable,
-    pub l3: [L3PageTable; 2],
+    pub l3: [L3PageTable; 3],
 }
 
 impl PageTable {
@@ -109,7 +109,7 @@ impl PageTable {
     fn new(perm: u64) -> Box<PageTable> {
         let mut page_table = Box::new(PageTable {
             l2: L2PageTable::new(),
-            l3: [L3PageTable::new(), L3PageTable::new()]
+            l3: [L3PageTable::new(), L3PageTable::new(), L3PageTable::new()]
         });
         page_table.l2.entries[0].set_value(EntryValid::Valid, RawL2Entry::VALID);
         page_table.l2.entries[0].set_value(EntryType::Table, RawL2Entry::TYPE);
@@ -131,12 +131,21 @@ impl PageTable {
         //field of RawL2Entry
         page_table.l2.entries[1].set_masked(page_table.l3[1].as_ptr().as_u64(), RawL2Entry::ADDR);
 
+        page_table.l2.entries[2].set_value(EntryValid::Valid, RawL2Entry::VALID);
+        page_table.l2.entries[2].set_value(EntryType::Table, RawL2Entry::TYPE);
+        page_table.l2.entries[2].set_value(EntryAttr::Mem, RawL2Entry::ATTR);
+        page_table.l2.entries[2].set_value(perm, RawL2Entry::AP);
+        page_table.l2.entries[2].set_value(EntrySh::ISh, RawL2Entry::SH);
+        page_table.l2.entries[2].set_value(1, RawL2Entry::AF);
+        //Even address for L3 table needs to be right shifted by 16 bits before storing in ADDR
+        //field of RawL2Entry
+        page_table.l2.entries[2].set_masked(page_table.l3[2].as_ptr().as_u64(), RawL2Entry::ADDR);
+
         page_table
     }
 
     /// Returns the (L2index, L3index) extracted from the given virtual address.
-    /// Since we are only supporting 1GB virtual memory in this system, L2index
-    /// should be smaller than 2.
+    /// L2index should be smaller than the number of L3PageTable.
     ///
     /// # Panics
     ///
@@ -151,7 +160,7 @@ impl PageTable {
         let l3_mask = 0x0001fff0000;
         let l2_index = (va_u64 & l2_mask)>>29;
         let l3_index = (va_u64 & l3_mask)>>16;
-        if l2_index >= 2{
+        if l2_index > 2{
             panic!("L2 index {:?} for Virtual Address {:?} is greater than 1", l2_index, va);
         }
         (l2_index, l3_index)
@@ -189,7 +198,6 @@ impl PageTable {
 impl<'a> IntoIterator for &'a mut PageTable {
     type Item = &'a L3Entry;
     type IntoIter = Chain<Iter<'a, L3Entry>, Iter<'a, L3Entry> >;
-    //type IntoIter = core::slice::Iter<'a, Self::Item>;
     fn into_iter(self) -> Self::IntoIter {
         self.l3[0].entries.iter().chain(self.l3[1].entries.iter())
     }
