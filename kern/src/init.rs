@@ -117,7 +117,19 @@ unsafe fn kinit() -> ! {
 #[no_mangle]
 pub unsafe extern "C" fn start2() -> ! {
     // Lab 5 1.A
-    unimplemented!("start2")
+    if MPIDR_EL1.get_value(MPIDR_EL1::Aff0) == 1 {
+        SP.set(KERN_STACK_BASE-KERN_STACK_SIZE);
+        kinit2()
+    }
+    if MPIDR_EL1.get_value(MPIDR_EL1::Aff0) == 2 {
+        SP.set(KERN_STACK_BASE-KERN_STACK_SIZE*2);
+        kinit2()
+    }
+    if MPIDR_EL1.get_value(MPIDR_EL1::Aff0) == 3 {
+        SP.set(KERN_STACK_BASE-KERN_STACK_SIZE*3);
+        kinit2()
+    }
+    unreachable!()
 }
 
 unsafe fn kinit2() -> ! {
@@ -128,12 +140,41 @@ unsafe fn kinit2() -> ! {
 
 unsafe fn kmain2() -> ! {
     // Lab 5 1.A
-    unimplemented!("kmain2")
+    let core_idx = MPIDR_EL1.get_value(MPIDR_EL1::Aff0);
+    let addr = SPINNING_BASE.offset(core_idx as isize);
+    unsafe {
+        write_volatile(addr, 0);
+        info!("kmain2 in core {:?}", core_idx);
+    }
+
+    loop {}
 }
 
 /// Wakes up each app core by writing the address of `init::start2`
 /// to their spinning base and send event with `sev()`.
 pub unsafe fn initialize_app_cores() {
     // Lab 5 1.A
-    unimplemented!("initialize_app_cores")
+    for core_idx in 1..NCORES {
+        let addr = SPINNING_BASE.offset(core_idx as isize);
+        unsafe {
+            write_volatile(addr, start2 as usize);
+        }
+        sev();
+    }
+    loop {
+        let mut chk = true;
+        for core_idx in 1..NCORES {
+            let addr = SPINNING_BASE.offset(core_idx as isize);
+            unsafe {
+                if core::ptr::read_volatile(addr) != 0 {
+                    chk = false;
+                }
+            }
+        }
+        if chk==true {
+            break;
+        }
+    }
+
+
 }
