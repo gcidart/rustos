@@ -2,6 +2,7 @@ use core::cell::UnsafeCell;
 use core::fmt;
 use core::ops::{Deref, DerefMut, Drop};
 use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use crate::percore::*;
 
 #[repr(align(32))]
 pub struct Mutex<T> {
@@ -34,13 +35,23 @@ impl<T> Mutex<T> {
     // Once MMU/cache is enabled, do the right thing here. For now, we don't
     // need any real synchronization.
     pub fn try_lock(&self) -> Option<MutexGuard<T>> {
-        let this = 0;
-        if !self.lock.load(Ordering::Relaxed) || self.owner.load(Ordering::Relaxed) == this {
-            self.lock.store(true, Ordering::Relaxed);
-            self.owner.store(this, Ordering::Relaxed);
-            Some(MutexGuard { lock: &self })
+        if(!is_mmu_ready())
+        {
+            let this = 0;
+            if !self.lock.load(Ordering::Relaxed) || self.owner.load(Ordering::Relaxed) == this {
+                self.lock.store(true, Ordering::Relaxed);
+                self.owner.store(this, Ordering::Relaxed);
+                Some(MutexGuard { lock: &self })
+            } else {
+                None
+            }
         } else {
-            None
+            if !self.lock.compare_and_swap(false, true, Ordering::Relaxed) {
+                self.owner.store(getcpu(), Ordering::Relaxed);
+                Some(MutexGuard { lock: &self })
+            } else {
+                None
+            }
         }
     }
 
@@ -58,6 +69,10 @@ impl<T> Mutex<T> {
     }
 
     fn unlock(&self) {
+        if(is_mmu_ready())
+        {
+            putcpu(self.owner.load(Ordering::Relaxed));
+        }
         self.lock.store(false, Ordering::Relaxed);
     }
 }

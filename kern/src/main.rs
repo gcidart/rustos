@@ -88,9 +88,9 @@ unsafe fn kmain() -> ! {
        ALLOCATOR.initialize();
        FILESYSTEM.initialize();
        VMM.initialize();
-       init::initialize_app_cores();
        SCHEDULER.initialize();
-       VMM.setup();
+       init::initialize_app_cores();
+       VMM.wait();
        SCHEDULER.start();
     }
     //Not reachable because of SCHEDULER.start()

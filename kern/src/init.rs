@@ -144,9 +144,9 @@ unsafe fn kmain2() -> ! {
     let addr = SPINNING_BASE.offset(core_idx as isize);
     unsafe {
         write_volatile(addr, 0);
-        info!("kmain2 in core {:?}", core_idx);
     }
-
+    VMM.wait();
+    info!("kmain2 in core {:?}", core_idx);
     loop {}
 }
 
