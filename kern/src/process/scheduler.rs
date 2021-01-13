@@ -92,31 +92,22 @@ impl GlobalScheduler {
     /// preemptive scheduling. This method should not return under normal
     /// conditions.
     pub fn start(&self) -> ! {
-        use pi::timer::tick_in;
-        self.initialize_global_timer_interrupt();
-        tick_in(TICK);
-        let sptr: u64; 
-        unsafe {
-            asm!("mov $0, sp"  //Store Current Stack Pointer to sptr            
-                 : "=r"(sptr) ::: "volatile");
+        use pi::local_interrupt::local_tick_in;
+        if aarch64::affinity() == 0 {
+            self.initialize_global_timer_interrupt();
         }
+        self.initialize_local_timer_interrupt();
         let mut frame : TrapFrame = TrapFrame::default();
         self.switch_to(&mut frame);
         let fptr = &frame as *const _ as u64;
-        //Stored in frame.x[27] as after context restore original SP will be available in reg x27
-        frame.x[27] = sptr; 
         unsafe {
             asm!("mov sp, $0
                   bl context_restore"
                   :: "r"(fptr)
                   :: "volatile");
         }
-        // Restore SP to original value and clear x27 to avoid leaking info to user level process
         unsafe {
-            asm!("mov sp, x27
-                  mov x27, #0    
-                  eret"
-                  :::: "volatile");
+            asm!("eret" :::: "volatile");
         }
         loop {
         }
@@ -131,10 +122,10 @@ impl GlobalScheduler {
     /// Registers a timer handler with `Usb::start_kernel_timer` which will
     /// invoke `poll_ethernet` after 1 second.
     pub fn initialize_global_timer_interrupt(&self) {
-        use pi::interrupt::{Controller, Interrupt};
+        /*use pi::interrupt::{Controller, Interrupt};
         crate::GLOBAL_IRQ.register(Interrupt::Timer1, Box::new(timer1_handler));
         let mut controller = Controller::new();
-        controller.enable(Interrupt::Timer1);
+        controller.enable(Interrupt::Timer1);*/
     }
 
     /// Initializes the per-core local timer interrupt with `pi::local_interrupt`.
@@ -142,7 +133,10 @@ impl GlobalScheduler {
     /// every `TICK` duration, which is defined in `param.rs`.
     pub fn initialize_local_timer_interrupt(&self) {
         // Lab 5 2.C
-        unimplemented!("initialize_local_timer_interrupt()")
+        use pi::local_interrupt::LocalController;
+        local_irq().register(LocalInterrupt::CNTPNSIRQ, Box::new(timerc_handler));
+        let mut controller = LocalController::new(affinity());
+        controller.enable_local_timer();
     }
 
     /// Initializes the scheduler and add userspace processes to the Scheduler.
@@ -157,6 +151,8 @@ impl GlobalScheduler {
         self.add(process3);
         let process4 = Process::load(Path::new("/fib")).unwrap();
         self.add(process4);
+        let process5 = Process::load(Path::new("/fib")).unwrap();
+        self.add(process5);
     }
 
     // The following method may be useful for testing Lab 4 Phase 3:
@@ -236,7 +232,8 @@ impl Scheduler {
             if process.context.tpidr_el0 == tf.tpidr_el0 {
                 match process.state {
                     State::Running => { 
-                        //crate::console::kprintln!("Process{:?} scheduled out with new state {:?}", tf.tpidr_el0, new_state);
+                        //info!("Process{:?} on core{:?} scheduled out with new state {:?}", 
+                        //          tf.tpidr_el0, affinity(), new_state);
                         break; 
                     },
                     _ => { idx = idx + 1; }
@@ -267,7 +264,7 @@ impl Scheduler {
         let mut idx = 0;
         for process in self.processes.iter_mut() {
             if process.is_ready() {
-                //crate::console::kprintln!("Process{:?} now running", process.context.tpidr_el0);
+                //info!("Process{:?} now running on core{:?}", process.context.tpidr_el0, affinity());
                 break;
             }
             else {
@@ -355,5 +352,10 @@ pub extern "C" fn  test_user_process() -> ! {
 pub fn timer1_handler(tf: &mut TrapFrame) {
     //crate::console::kprintln!("Timer interrupt after {:?}", TICK);
     pi::timer::tick_in(TICK);
+    crate::SCHEDULER.switch(State::Ready, tf);
+}
+
+pub fn timerc_handler(tf: &mut TrapFrame) {
+    pi::local_interrupt::local_tick_in(affinity(), TICK);
     crate::SCHEDULER.switch(State::Ready, tf);
 }

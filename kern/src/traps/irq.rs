@@ -86,7 +86,22 @@ impl Index<LocalInterrupt> for LocalIrq {
 
     fn index(&self, int: LocalInterrupt) -> &IrqHandlerMutex {
         // Lab 5 1.C
-        unimplemented!("LocalInterrupt Index")
+        use LocalInterrupt::*;
+        let index = match int {
+            CNTPSIRQ => 0,
+            CNTPNSIRQ => 1,
+            CNTHPIRQ => 2,
+            CNTVIRQ => 3,
+            Mailbox0 => 4,
+            Mailbox1 => 5,
+            Mailbox2 => 6,
+            Mailbox3 => 7,
+            GPU => 8,
+            PMU => 9,
+            AXI => 10,
+            LocalTimer => 11
+        };
+        &self.0[index]
     }
 }
 

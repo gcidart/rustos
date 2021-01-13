@@ -257,7 +257,6 @@ pub fn sys_sock_recv(sock_idx: usize, va: usize, len: usize, tf: &mut TrapFrame)
 pub fn sys_write_str(va: usize, len: usize, tf: &mut TrapFrame) {
     let result = unsafe { to_user_slice(va, len) }
         .and_then(|slice| core::str::from_utf8(slice).map_err(|_| OsError::InvalidArgument));
-
     match result {
         Ok(msg) => {
             kprint!("{}", msg);

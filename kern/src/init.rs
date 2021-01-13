@@ -147,7 +147,7 @@ unsafe fn kmain2() -> ! {
     }
     VMM.wait();
     info!("kmain2 in core {:?}", core_idx);
-    loop {}
+    crate::SCHEDULER.start()
 }
 
 /// Wakes up each app core by writing the address of `init::start2`

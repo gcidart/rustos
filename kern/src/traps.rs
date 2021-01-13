@@ -48,7 +48,10 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     use crate::console::kprintln;
 
     if info.kind == Kind::Irq {
-        crate::GLOBAL_IRQ.invoke(Interrupt::Timer1, tf);
+        /*if aarch64::affinity()==0 {
+            crate::GLOBAL_IRQ.invoke(Interrupt::Timer1, tf);
+        }*/
+        percore::local_irq().invoke(LocalInterrupt::CNTPNSIRQ, tf);
         return;
     }
         
@@ -60,7 +63,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             kprintln!("Debug shell exited");
         },
         Syndrome::Svc(y) => {
-            //kprintln!("Svc{:?} encountered", y);
+            //trace!("Svc{:?} encountered", y);
             handle_syscall(y, tf);
         },
         Syndrome::DataAbort {
